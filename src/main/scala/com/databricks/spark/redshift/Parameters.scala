@@ -39,7 +39,7 @@ private [redshift] object Parameters extends Logging {
     "diststyle" -> "EVEN",
     "usestagingtable" -> "true",
     "postactions" -> ";",
-    "avrocompression" -> "snappy"
+    "avrocompression" -> ""
   )
 
   /**

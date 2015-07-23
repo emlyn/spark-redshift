@@ -50,20 +50,21 @@ val sqlContext = new SQLContext(sc)
 val df: DataFrame = sqlContext.read
     .format("com.databricks.spark.redshift")
     .option("url", "jdbc:postgresql://redshifthost:5439/database?user=username&password=pass")
-    .option("dbtable" -> "my_table")
-    .option("tempdir" -> "s3://path/for/temp/data")
+    .option("dbtable", "my_table")
+    .option("tempdir", "s3://path/for/temp/data")
     .load()
 
 // Apply some transformations to the data as per normal, then you can use the
 // Data Source API to write the data back to another table
 
 df.write
-  .format("com.databricks.spark.redshift")
+    .format("com.databricks.spark.redshift")
     .option("url", "jdbc:postgresql://redshifthost:5439/database?user=username&password=pass")
-    .option("dbtable" -> "my_table_copy")
-    .option("tempdir" -> "s3://path/for/temp/data")
-  .mode("error")
-  .save()
+    .option("dbtable", "my_table_copy")
+    .option("tempdir", "s3://path/for/temp/data")
+    .option("avrocompression", "snappy")
+    .mode("error")
+    .save()
 ```
 
 #### Python
@@ -78,18 +79,19 @@ sql_context = SQLContext(sc)
 df = sql_context.read \
     .format("com.databricks.spark.redshift") \
     .option("url", "jdbc:postgresql://redshifthost:5439/database?user=username&password=pass") \
-    .option("dbtable" -> "my_table") \
-    .option("tempdir" -> "s3://path/for/temp/data") \
+    .option("dbtable", "my_table") \
+    .option("tempdir", "s3://path/for/temp/data") \
     .load()
 
 # Write back to a table
 df.write \
-  .format("com.databricks.spark.redshift")
-  .option("url", "jdbc:postgresql://redshifthost:5439/database?user=username&password=pass") \
-  .option("dbtable" -> "my_table_copy") \
-  .option("tempdir" -> "s3://path/for/temp/data") \
-  .mode("error")
-  .save()
+    .format("com.databricks.spark.redshift")
+    .option("url", "jdbc:postgresql://redshifthost:5439/database?user=username&password=pass") \
+    .option("dbtable", "my_table_copy") \
+    .option("tempdir", "s3://path/for/temp/data") \
+    .option("avrocompression", "snappy")
+    .mode("error")
+    .save()
 ```
 
 #### SQL
@@ -99,6 +101,7 @@ CREATE TABLE my_table
 USING com.databricks.spark.redshift
 OPTIONS (dbtable 'my_table',
          tempdir 's3://my_bucket/tmp',
+         avrocompression 'snappy',
          url 'jdbc:postgresql://host:port/db?user=username&password=pass');
 ```
 
@@ -275,11 +278,11 @@ table, the changes will be reverted and the backup table restored if post action
  <tr>
     <td><tt>avrocompression</tt></td>
     <td>No</td>
-    <td><tt>snappy</tt></td>
+    <td>No compression (unless set in Hadoop config)</td>
     <td>
 <p>Sets the compression codec to use on the Avro data to be loaded into Redshift. This overwrites the <tt>avro.output.codec</tt>
-key in the Hadoop configuration with the specified value. To disable this and use the value set in the Hadoop configuration,
-set this to null or an empty string.</p>
+key in the Hadoop configuration with the specified value. If left unset (or set to null or an empty string) it will leave
+the Hadoop configuration unchanged.</p>
     </td>
  </tr>
 </table>
