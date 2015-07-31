@@ -39,7 +39,8 @@ private [redshift] object Parameters extends Logging {
     "diststyle" -> "EVEN",
     "usestagingtable" -> "true",
     "maxerrors" -> "0",
-    "postactions" -> ";"
+    "postactions" -> ";",
+    "avrocompression" -> ""
   )
 
   /**
@@ -202,5 +203,12 @@ private [redshift] object Parameters extends Logging {
 
       s"aws_access_key_id=$accessKeyId;aws_secret_access_key=$secretAccessKey"
     }
+
+    /**
+     * When nonempty/non-null sets the compression codec to use for writing Avro data.
+     *
+     * Defaults to disabled (i.e. whatever is set in Hadoop config).
+     */
+    def avrocompression = parameters("avrocompression")
   }
 }
