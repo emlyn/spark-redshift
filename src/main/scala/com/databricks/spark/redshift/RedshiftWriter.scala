@@ -109,7 +109,17 @@ private[redshift] class RedshiftWriter(
   }
 
   /**
-   * Perform the Redshift load by issuing a COPY statement.
+    * Generate COMMENT SQL statements for the table and columns.
+    */
+  private def commentActions(tableComment: Option[String], schema: StructType): List[String] = {
+    tableComment.toList.map(desc => s"COMMENT ON TABLE %s IS '$desc'") ++
+    schema.fields
+      .withFilter(f => f.metadata.contains("description"))
+      .map(f => s"""COMMENT ON COLUMN %s.${f.name} IS '${f.metadata.getString("description")}'""")
+  }
+
+  /**
+    * Perform the Redshift load by issuing a COPY statement.
    */
   private def doRedshiftLoad(
       conn: Connection,
