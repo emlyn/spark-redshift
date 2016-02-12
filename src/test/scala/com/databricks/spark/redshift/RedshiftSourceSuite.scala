@@ -293,24 +293,15 @@ class RedshiftSourceSuite
           | DELETE FROM %s WHERE id < 100;
           | DELETE FROM %s WHERE id > 100;
           | DELETE FROM %s WHERE id = -1;
-        """.stripMargin.trim,
-      "usestagingtable" -> "true")
+        """.stripMargin.trim)
 
     val expectedCommands = Seq(
-      "DROP TABLE IF EXISTS \"PUBLIC\".\"test_table_staging_.*\"".r,
-      "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table_staging_.*\"".r,
-      "DELETE FROM \"PUBLIC\".\"test_table_staging_.*\" WHERE id < 100".r,
-      "DELETE FROM \"PUBLIC\".\"test_table_staging_.*\" WHERE id > 100".r,
-      "DELETE FROM \"PUBLIC\".\"test_table_staging_.*\" WHERE id = -1".r,
-      "COPY \"PUBLIC\".\"test_table_staging_.*\"".r,
-      """
-        | BEGIN;
-        | ALTER TABLE "PUBLIC"\."test_table" RENAME TO "test_table_backup_.*";
-        | ALTER TABLE "PUBLIC"\."test_table_staging_.*" RENAME TO "test_table";
-        | DROP TABLE "PUBLIC"\."test_table_backup_.*";
-        | END;
-      """.stripMargin.trim.r,
-      "DROP TABLE IF EXISTS \"PUBLIC\"\\.\"test_table_staging_.*\"".r)
+      "DROP TABLE IF EXISTS \"PUBLIC\".\"test_table\"".r,
+      "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table\"".r,
+      "DELETE FROM \"PUBLIC\".\"test_table\" WHERE id < 100".r,
+      "DELETE FROM \"PUBLIC\".\"test_table\" WHERE id > 100".r,
+      "DELETE FROM \"PUBLIC\".\"test_table\" WHERE id = -1".r,
+      "COPY \"PUBLIC\".\"test_table\"".r)
 
     source.createRelation(testSqlContext, SaveMode.Overwrite, params, expectedDataDF)
     mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
@@ -368,30 +359,6 @@ class RedshiftSourceSuite
     mockRedshift.verifyThatConnectionsWereClosed()
     mockRedshift.verifyThatCommitWasNotCalled()
     mockRedshift.verifyThatExpectedQueriesWereIssued(Seq.empty)
-  }
-
-  test("Failed copies are handled gracefully when using a staging table") {
-    val params = defaultParams ++ Map("usestagingtable" -> "true")
-
-    val mockRedshift = new MockRedshift(
-      defaultParams("url"),
-      Map(TableName.parseFromEscaped("test_table").toString -> TestUtils.testSchema),
-      jdbcQueriesThatShouldFail = Seq("COPY \"PUBLIC\".\"test_table.*\"".r))
-
-    val expectedCommands = Seq(
-      "DROP TABLE IF EXISTS \"PUBLIC\".\"test_table.*\"".r,
-      "CREATE TABLE IF NOT EXISTS \"PUBLIC\".\"test_table.*\"".r,
-      "COPY \"PUBLIC\".\"test_table.*\"".r,
-      ".*FROM stl_load_errors.*".r
-    )
-
-    val source = new DefaultSource(mockRedshift.jdbcWrapper, _ => mockS3Client)
-    intercept[Exception] {
-      source.createRelation(testSqlContext, SaveMode.Overwrite, params, expectedDataDF)
-    }
-    mockRedshift.verifyThatConnectionsWereClosed()
-    mockRedshift.verifyThatCommitWasNotCalled()
-    mockRedshift.verifyThatExpectedQueriesWereIssued(expectedCommands)
   }
 
   test("Append SaveMode doesn't destroy existing data") {
