@@ -113,16 +113,6 @@ private[redshift] class RedshiftWriter(
   }
 
   /**
-    * Generate COMMENT SQL statements for the table and columns.
-    */
-  private def commentActions(tableComment: Option[String], schema: StructType): List[String] = {
-    tableComment.toList.map(desc => s"COMMENT ON TABLE %s IS '$desc'") ++
-    schema.fields
-      .withFilter(f => f.metadata.contains("description"))
-      .map(f => s"""COMMENT ON COLUMN %s.${f.name} IS '${f.metadata.getString("description")}'""")
-  }
-
-  /**
     * Perform the Redshift load by issuing a COPY statement.
    */
   private def doRedshiftLoad(
@@ -355,7 +345,8 @@ private[redshift] class RedshiftWriter(
     Utils.checkThatBucketHasObjectLifecycleConfiguration(params.rootTempDir, s3ClientFactory(creds))
 
     // Save the table's rows to S3:
-    val manifestUrl = unloadData(sqlContext, data, params.createPerQueryTempDir())
+    val manifestUrl = unloadData(sqlContext, data, params.createPerQueryTempDir(),
+      params.tempFormat, params.nullString)
 
     val conn = jdbcWrapper.getConnector(params.jdbcDriver, params.jdbcUrl, params.credentials)
     conn.setAutoCommit(false)
